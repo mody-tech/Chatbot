@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Adaptive Chatbot</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center p-4 sm:p-6 font-sans">
+
+    <!-- Header -->
+    <header class="w-full max-w-2xl flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+            <h1 class="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-500 bg-clip-text text-transparent">
+                Rule-Based Adaptive Chatbot
+            </h1>
+        </div>
+        <span class="text-xs text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">No API Key Needed</span>
+    </header>
+
+    <!-- Chat Transcript Log -->
+    <main class="w-full max-w-2xl flex-1 bg-slate-800/50 border border-slate-800 rounded-2xl p-4 flex flex-col h-[65vh] my-4 shadow-inner overflow-hidden">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-700/50">
+            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Conversation History</span>
+            <button id="clearLogBtn" class="text-xs text-slate-500 hover:text-slate-300">Clear History</button>
+        </div>
+        
+        <div id="transcriptBox" class="flex-1 overflow-y-auto space-y-3 pr-2 scrollbar-thin">
+            <div class="text-xs text-slate-500 text-center italic py-4">
+                Type anything below! The bot adapts, remembers your name or favorite topics, and speaks back to you.
+            </div>
+        </div>
+    </main>
+
+    <!-- Text Input Bar -->
+    <div class="w-full max-w-2xl">
+        <form id="textForm" class="flex gap-2">
+            <input type="text" id="textInput" placeholder="Type a message (e.g., 'Hello', 'My name is Alex', 'What is Python?')..." 
+                   class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 shadow-inner">
+            <button type="submit" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-xl transition shadow">
+                Send & Speak
+            </button>
+        </form>
+    </div>
+
+    <!-- JavaScript Logic (If-Else Adaptive Engine) -->
+    <script>
+        const textForm = document.getElementById('textForm');
+        const textInput = document.getElementById('textInput');
+        const transcriptBox = document.getElementById('transcriptBox');
+        const clearLogBtn = document.getElementById('clearLogBtn');
+
+        let synth = window.speechSynthesis;
+
+        // Adaptive Memory State Variables
+        let userMemory = {
+            name: null,
+            favoriteTopic: null,
+            lastTopic: null
+        };
+
+        // 1. Adaptive Response Engine using If-Else Patterns
+        function generateAdaptiveResponse(input) {
+            const text = input.toLowerCase().trim();
+            let response = "";
+
+            // Pattern: Remembering User Name
+            if (text.startsWith("my name is") || text.startsWith("i am ")) {
+                const parts = text.split("is").length > 1 ? text.split("is") : text.split("am");
+                const name = parts[1] ? parts[1].trim() : "friend";
+                userMemory.name = name.charAt(0).toUpperCase() + name.slice(1);
+                response = `Nice to meet you, ${userMemory.name}! I will remember your name. What would you like to talk about?`;
+            } 
+            // Pattern: Recall User Name
+            else if (text.includes("what is my name") || text.includes("who am i")) {
+                if (userMemory.name) {
+                    response = `Your name is ${userMemory.name}, of course!`;
+                } else {
+                    response = `You haven't told me your name yet! You can say "My name is [your name]".`;
+                }
+            } 
+            // Pattern: Greetings
+            else if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
+                const greetingName = userMemory.name ? `, ${userMemory.name}` : "";
+                response = `Hello${greetingName}! How can I help you today?`;
+            } 
+            // Pattern: Asking how the bot is
+            else if (text.includes("how are you") || text.includes("how do you do")) {
+                response = `I'm just a simple JavaScript bot running locally, but I'm fully operational and ready to chat!`;
+            } 
+            // Pattern: Python or Coding Topic
+            else if (text.includes("python") || text.includes("code") || text.includes("programming")) {
+                userMemory.favoriteTopic = "programming";
+                userMemory.lastTopic = "python";
+                response = `Python is a fantastic programming language! It uses clean syntax and is great for automation, web dev, and AI. Are you building a project?`;
+            } 
+            // Pattern: Follow-up on project/building
+            else if (text.includes("project") || text.includes("build") || text.includes("app")) {
+                response = `Building projects is the best way to learn. Since you're interested in ${userMemory.lastTopic || 'tech'}, what kind of app are you working on?`;
+            } 
+            // Pattern: Weather (Simulated adaptive response)
+            else if (text.includes("weather")) {
+                response = `I cannot check live internet weather without an API key, but I hope it's nice and sunny where you are!`;
+            } 
+            // Pattern: Jokes
+            else if (text.includes("joke") || text.includes("funny")) {
+                response = `Why do programmers prefer dark mode? Because light attracts bugs! 😄`;
+            } 
+            // Pattern: Saying Goodbye
+            else if (text.includes("bye") || text.includes("exit") || text.includes("quit")) {
+                const goodbyeName = userMemory.name ? ` ${userMemory.name}` : "";
+                response = `Goodbye${goodbyeName}! Have a great day ahead!`;
+            } 
+            // Default Adaptive Fallback (retains context if a previous topic exists)
+            else {
+                if (userMemory.favoriteTopic === "programming" && (text.includes("yes") || text.includes("yeah"))) {
+                    response = `That's awesome! Tell me more about your code or any bugs you're trying to fix.`;
+                } else {
+                    response = `That's interesting! You mentioned "${text}". Could you tell me a bit more about that?`;
+                }
+            }
+
+            return response;
+        }
+
+        // 2. Text-to-Speech Output
+        function speakText(text) {
+            if (!synth) return;
+            synth.cancel(); // Stop any ongoing speech
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+        }
+
+        // 3. Append Messages to UI Log
+        function appendMessage(sender, text) {
+            if (transcriptBox.children.length === 1 && transcriptBox.children[0].classList.contains('italic')) {
+                transcriptBox.innerHTML = '';
+            }
+
+            const msgWrapper = document.createElement('div');
+            msgWrapper.className = `flex flex-col ${sender === 'user' ? 'items-end' : 'items-start'}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[85%] px-3.5 py-2.5 rounded-xl text-xs sm:text-sm leading-relaxed ${
+                sender === 'user' 
+                ? 'bg-emerald-600 text-white rounded-br-none' 
+                : 'bg-slate-700 text-slate-100 rounded-bl-none border border-slate-600'
+            }`;
+            bubble.textContent = text;
+
+            msgWrapper.appendChild(bubble);
+            transcriptBox.appendChild(msgWrapper);
+            transcriptBox.scrollTop = transcriptBox.scrollHeight;
+        }
+
+        // Event Listener for Chat Submission
+        textForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const message = textInput.value.trim();
+            if (!message) return;
+
+            // Show user message
+            appendMessage('user', message);
+            textInput.value = '';
+
+            // Generate adaptive rule-based response
+            const botReply = generateAdaptiveResponse(message);
+
+            // Display bot reply and read aloud
+            setTimeout(() => {
+                appendMessage('ai', botReply);
+                speakText(botReply);
+            }, 300);
+        });
+
+        // Clear History Handler
+        clearLogBtn.addEventListener('click', () => {
+            userMemory = { name: null, favoriteTopic: null, lastTopic: null };
+            transcriptBox.innerHTML = `
+                <div class="text-xs text-slate-500 text-center italic py-4">
+                    Memory cleared! Type a new message to start fresh.
+                </div>`;
+        });
+    </script>
+</body>
+</html>
